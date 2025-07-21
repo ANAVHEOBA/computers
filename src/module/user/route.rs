@@ -9,7 +9,19 @@ pub fn config(cfg: &mut web::ServiceConfig) {
             .service(login)
             .service(resend_verification)
             .service(delete_user) // Temporary route
+    )
+    .service(
+        web::scope("/auth")
+            .service(google_oauth_callback)
     );
+}
+
+#[post("/google/callback")]
+pub async fn google_oauth_callback(
+    data: web::Json<serde_json::Value>,
+    user_controller: web::Data<UserController>,
+) -> web::Json<serde_json::Value> {
+    user_controller.handle_google_oauth(data.into_inner()).await
 }
 
 #[post("/register")]

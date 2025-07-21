@@ -4,6 +4,7 @@ use serde_json::{json, Value};
 use async_trait::async_trait;
 use tokio;
 use bcrypt::verify;
+use uuid::Uuid;
 
 use crate::module::user::{
     crud::UserCrud,
@@ -11,11 +12,15 @@ use crate::module::user::{
     model::User,
     schema::{UserRegistrationSchema, VerifyEmailSchema, LoginSchema},
 };
-use crate::service::{email_service, email_templates, jwt_service::JwtService};
+use crate::service::{
+    email_service, email_templates, jwt_service::JwtService,
+    google_oauth_service::GoogleOauthService,
+};
 
 pub struct UserController {
     crud: UserCrud,
     jwt_service: JwtService,
+    google_oauth_service: GoogleOauthService,
 }
 
 impl UserController {
@@ -23,7 +28,105 @@ impl UserController {
         Self { 
             crud,
             jwt_service: JwtService::new(),
+            google_oauth_service: GoogleOauthService::new(),
         }
+    }
+
+    pub async fn handle_google_oauth(&self, data: Value) -> web::Json<Value> {
+        let code = match data.get("code").and_then(|v| v.as_str()) {
+            Some(c) => c,
+            None => {
+                return web::Json(json!({
+                    "status": "error",
+                    "message": "Authorization code not provided."
+                }));
+            }
+        };
+
+        // Exchange code for user info
+        let user_info = match self.google_oauth_service.exchange_code_for_user_info(code).await {
+            Ok(info) => info,
+            Err(e) => {
+                return web::Json(json!({
+                    "status": "error",
+                    "message": e
+                }));
+            }
+        };
+
+        // Check if user exists, otherwise create a new one
+        let user = match self.crud.find_by_email(&user_info.email).await {
+            Ok(Some(user)) => user, // User exists
+            Ok(None) => { // User does not exist, create them
+                let new_user = User {
+                    id: None,
+                    first_name: user_info.given_name,
+                    last_name: user_info.family_name,
+                    email: user_info.email.clone(),
+                    phone_number: "".to_string(), // No phone number from Google
+                    password_hash: Uuid::new_v4().to_string(), // No password, use a placeholder
+                    profile_picture: user_info.picture,
+                    is_active: true,
+                    bio: None,
+                    email_verified: true, // Verified by Google
+                    phone_verified: false,
+                    verification_code: None,
+                    verification_code_expires_at: None,
+                    created_at: Utc::now(),
+                    updated_at: Utc::now(),
+                };
+
+                match self.crud.create_user(new_user).await {
+                    Ok(user) => user,
+                    Err(e) => {
+                        return web::Json(json!({
+                            "status": "error",
+                            "message": format!("Failed to create user: {}", e)
+                        }));
+                    }
+                }
+            },
+            Err(e) => {
+                return web::Json(json!({
+                    "status": "error",
+                    "message": format!("Database error: {}", e)
+                }));
+            }
+        };
+        
+        // At this point, `user` is either the existing or newly created user.
+        // Generate JWT token
+        let user_id = user.id.map(|id| id.to_string()).unwrap_or_else(|| "unknown".to_string());
+        
+        let token = match self.jwt_service.generate_token(
+            user_id.clone(),
+            user.email.clone(),
+            user.first_name.clone(),
+            user.last_name.clone(),
+        ) {
+            Ok(token) => token,
+            Err(e) => {
+                return web::Json(json!({
+                    "status": "error",
+                    "message": format!("Failed to generate token: {}", e)
+                }));
+            }
+        };
+
+        web::Json(json!({
+            "status": "success",
+            "message": "Google sign-in successful",
+            "data": {
+                "token": token,
+                "user": {
+                    "user_id": user_id,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "is_verified": user.email_verified
+                }
+            }
+        }))
     }
 
     pub async fn handle_registration(&self, data: Value) -> web::Json<Value> {
