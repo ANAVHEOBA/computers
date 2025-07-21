@@ -1,5 +1,5 @@
 use actix_cors::Cors;
-use actix_web::{middleware, web, App, HttpServer};
+use actix_web::{middleware as actix_middleware, web, App, HttpServer};
 use dotenv::dotenv;
 
 mod app;
@@ -40,12 +40,12 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             // Middleware
-            .wrap(middleware::Logger::default())
+            .wrap(actix_middleware::Logger::default())
             .wrap(Cors::permissive())
-            .wrap(middleware::NormalizePath::trim())
-            .wrap(Authentication::new())  // Add authentication middleware
+            .wrap(actix_middleware::NormalizePath::trim())
+            .wrap(Authentication::new()) // Our custom auth middleware
             .wrap(
-                middleware::DefaultHeaders::new()
+                actix_middleware::DefaultHeaders::new()
                     .add(("X-Content-Type-Options", "nosniff"))
                     .add(("X-Frame-Options", "DENY")),
             )
