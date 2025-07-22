@@ -7,14 +7,18 @@ edition = "2024"
 actix-cors = "0.7.1"
 actix-web = "4.11.0"
 async-trait = "0.1.88"
+base64 = "0.22.1"
 bcrypt = "0.17.0"
 bson = { version = "2.15.0", features = ["chrono-0_4"] }
 chrono = { version = "0.4.41", features = ["serde"] }
+cloudinary = "0.8.1"
 dotenv = "0.15.0"
 env_logger = "0.11.8"
 futures-util = "0.3.31"
+image = "0.25.6"
 jsonwebtoken = "9.3.1"
 lettre = { version = "0.11.17", features = ["smtp-transport"] }
+mime = "0.3.17"
 mongodb = "3.2.4"
 oauth2 = { version = "5.0.0", features = ["reqwest"] }
 rand = "0.9.2"
@@ -22,7 +26,7 @@ reqwest = { version = "0.12.22", features = ["json"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.141"
 tokio = { version = "1.46.1", features = ["full"] }
-uuid = "1.17.0"
+uuid = { version = "1.17.0", features = ["v4"] }
 validator = { version = "0.20.0", features = ["derive"] }
 
 [[test]]
