@@ -16,6 +16,7 @@ use crate::service::{
     email_service, email_templates, jwt_service::JwtService,
     google_oauth_service::GoogleOauthService,
 };
+use crate::service::jwt_service::Role;
 
 pub struct UserController {
     crud: UserCrud,
@@ -103,6 +104,7 @@ impl UserController {
             user.email.clone(),
             user.first_name.clone(),
             user.last_name.clone(),
+            Role::User,
         ) {
             Ok(token) => token,
             Err(e) => {
@@ -249,6 +251,7 @@ impl UserController {
                     user.email.clone(),
                     user.first_name.clone(),
                     user.last_name.clone(),
+                    Role::User,
                 ) {
                     Ok(token) => token,
                     Err(e) => {
@@ -363,17 +366,17 @@ impl UserService for UserController {
         }
     }
 
-    async fn verify_phone(&self, _user_id: String, _code: String) -> Result<(), String> {
-        unimplemented!()
-    }
+    // async fn verify_phone(&self, _user_id: String, _code: String) -> Result<(), String> {
+    //     unimplemented!()
+    // }
 
-    async fn request_password_reset(&self, _email: String) -> Result<(), String> {
-        unimplemented!()
-    }
+    // async fn request_password_reset(&self, _email: String) -> Result<(), String> {
+    //     unimplemented!()
+    // }
 
-    async fn reset_password(&self, _token: String, _new_password: String) -> Result<(), String> {
-        unimplemented!()
-    }
+    // async fn reset_password(&self, _token: String, _new_password: String) -> Result<(), String> {
+    //     unimplemented!()
+    // }
 
     async fn resend_verification_code(&self, email: &str) -> Result<(), String> {
         // Find user by email

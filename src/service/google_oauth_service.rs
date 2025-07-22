@@ -1,6 +1,6 @@
 use oauth2::{
-    basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
-    RedirectUrl, Scope, TokenResponse, TokenUrl,
+    basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, EndpointNotSet,
+    EndpointSet, RedirectUrl, TokenResponse, TokenUrl,
 };
 use reqwest;
 use serde::Deserialize;
@@ -15,7 +15,7 @@ pub struct GoogleUserInfo {
 }
 
 pub struct GoogleOauthService {
-    client: BasicClient,
+    client: BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>,
 }
 
 impl GoogleOauthService {
@@ -32,16 +32,14 @@ impl GoogleOauthService {
             .expect("Invalid token endpoint URL");
 
         // Set up the config for the Google OAuth2 process.
-        let client = BasicClient::new(
-            google_client_id,
-            Some(google_client_secret),
-            auth_url,
-            Some(token_url),
-        )
-        .set_redirect_uri(
-            RedirectUrl::new(env::var("GOOGLE_REDIRECT_URI").expect("Missing GOOGLE_REDIRECT_URI"))
-                .expect("Invalid redirect URL"),
-        );
+        let client = BasicClient::new(google_client_id)
+            .set_client_secret(google_client_secret)
+            .set_auth_uri(auth_url)
+            .set_token_uri(token_url)
+            .set_redirect_uri(
+                RedirectUrl::new(env::var("GOOGLE_REDIRECT_URI").expect("Missing GOOGLE_REDIRECT_URI"))
+                    .expect("Invalid redirect URL"),
+            );
 
         Self { client }
     }
@@ -50,21 +48,18 @@ impl GoogleOauthService {
         &self,
         code: &str,
     ) -> Result<GoogleUserInfo, String> {
+        // Create a reqwest client that doesn't follow redirects (for security)
+        let http_client = reqwest::Client::new();
+
         // Exchange the code for a token.
         let token_result = self
             .client
             .exchange_code(AuthorizationCode::new(code.to_string()))
-            .request_async(oauth2::reqwest::async_http_client)
+            .request_async(&http_client)
             .await
             .map_err(|e| format!("Failed to exchange token: {}", e))?;
 
-        // The id_token contains user profile information.
-        let id_token = token_result
-            .id_token()
-            .ok_or_else(|| "Google didn't return an ID token".to_string())?;
-
-        // The id_token is a JWT. We need to get the user's info from it.
-        // Google's user info endpoint is another way, but let's use the token.
+        // Get user info directly from Google's userinfo endpoint
         let user_info_url = "https://www.googleapis.com/oauth2/v3/userinfo";
         let user_info_response = reqwest::Client::new()
             .get(user_info_url)

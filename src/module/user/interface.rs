@@ -46,9 +46,9 @@ pub trait UserValidation {
 pub trait UserService: UserValidation {
     async fn register_user(&self, data: UserRegistrationSchema) -> Result<User, String>;
     async fn verify_email(&self, email: &str, code: &str) -> Result<(), String>;
-    async fn verify_phone(&self, user_id: String, code: String) -> Result<(), String>;
-    async fn request_password_reset(&self, email: String) -> Result<(), String>;
-    async fn reset_password(&self, token: String, new_password: String) -> Result<(), String>;
-    async fn resend_verification_code(&self, email: &str) -> Result<(), String>;
     async fn login(&self, data: LoginSchema) -> Result<User, String>;
+    async fn resend_verification_code(&self, email: &str) -> Result<(), String>;
+    // async fn verify_phone(&self, user_id: String, code: String) -> Result<(), String>;
+    // async fn request_password_reset(&self, email: String) -> Result<(), String>;
+    // async fn reset_password(&self, token: String, new_password: String) -> Result<(), String>;
 }

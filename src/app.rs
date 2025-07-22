@@ -2,13 +2,19 @@ use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use mongodb::Database;
 
-use crate::module::user::route as user_routes;
+use crate::module::{user::route as user_routes, admin::route as admin_routes};
+use crate::middleware::AdminAuthentication;
 
 /// Configures all the application services and routes.
 pub fn configure_services(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
-            .configure(user_routes::config),
+            .configure(user_routes::config)
+            .service(
+                web::scope("/admin")
+                    .wrap(AdminAuthentication::new())
+                    .configure(admin_routes::config)
+            )
     )
     .route("/health", web::get().to(health_check))
     .default_service(web::route().to(not_found));

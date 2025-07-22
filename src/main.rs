@@ -10,6 +10,8 @@ mod middleware;
 
 use crate::module::user::crud::UserCrud;
 use crate::module::user::controller::UserController;
+use crate::module::admin::crud::AdminCrud;
+use crate::module::admin::controller::AdminController;
 use crate::middleware::Authentication;
 
 #[actix_web::main]
@@ -30,8 +32,15 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to connect to MongoDB");
 
+    // Initialize user controller
     let user_crud = UserCrud::new(db.clone());
     let user_controller = web::Data::new(UserController::new(user_crud));
+
+    // Initialize admin controller and create default admin if not exists
+    let admin_crud = AdminCrud::new(&db);
+    let admin_controller = web::Data::new(AdminController::new(admin_crud));
+    admin_controller.initialize_admin().await.expect("Failed to initialize admin");
+
     let db_data = web::Data::new(db);
 
     println!("🚀 Server starting on http://127.0.0.1:8080");
@@ -51,6 +60,7 @@ async fn main() -> std::io::Result<()> {
             )
             // App data
             .app_data(user_controller.clone())
+            .app_data(admin_controller.clone())
             .app_data(db_data.clone())
             // Configure services/routes
             .configure(app::configure_services)

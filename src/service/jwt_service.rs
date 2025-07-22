@@ -5,6 +5,12 @@ use chrono::{Utc, Duration};
 use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum Role {
+    User,
+    Admin,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,  // Subject (user ID)
     pub exp: i64,     // Expiration time
@@ -13,10 +19,11 @@ pub struct Claims {
     pub email: String,
     pub first_name: String,
     pub last_name: String,
+    pub role: Role,   // User role
 }
 
 impl Claims {
-    pub fn new(user_id: String, email: String, first_name: String, last_name: String) -> Self {
+    pub fn new(user_id: String, email: String, first_name: String, last_name: String, role: Role) -> Self {
         let now = Utc::now();
         let expires_at = now + Duration::hours(24); // Token expires in 24 hours
 
@@ -28,6 +35,7 @@ impl Claims {
             email,
             first_name,
             last_name,
+            role,
         }
     }
 }
@@ -46,8 +54,15 @@ impl JwtService {
         }
     }
 
-    pub fn generate_token(&self, user_id: String, email: String, first_name: String, last_name: String) -> Result<String, JwtError> {
-        let claims = Claims::new(user_id, email, first_name, last_name);
+    pub fn generate_token(
+        &self,
+        user_id: String,
+        email: String,
+        first_name: String,
+        last_name: String,
+        role: Role,
+    ) -> Result<String, JwtError> {
+        let claims = Claims::new(user_id, email, first_name, last_name, role);
         encode(&Header::default(), &claims, &self.encoding_key)
     }
 
