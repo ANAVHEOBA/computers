@@ -14,7 +14,6 @@ use crate::module::admin::crud::AdminCrud;
 use crate::module::admin::controller::AdminController;
 use crate::module::banner::crud::BannerCrud;
 use crate::module::banner::controller::BannerController;
-use crate::middleware::Authentication;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -58,7 +57,6 @@ async fn main() -> std::io::Result<()> {
             .wrap(actix_middleware::Logger::default())
             .wrap(Cors::permissive())
             .wrap(actix_middleware::NormalizePath::trim())
-            .wrap(Authentication::new()) // Our custom auth middleware
             .wrap(
                 actix_middleware::DefaultHeaders::new()
                     .add(("X-Content-Type-Options", "nosniff"))

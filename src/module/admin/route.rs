@@ -1,11 +1,16 @@
-use actix_web::{web, post};
+use actix_web::{web, post, Scope};
 use crate::module::admin::controller::AdminController;
 
-pub fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/admin")
-            .service(login)
-    );
+// Public routes (no authentication required)
+pub fn public_routes() -> Scope {
+    web::scope("/admin-public")
+        .service(login)
+}
+
+// Protected routes (requires admin authentication)
+pub fn protected_routes(cfg: &mut web::ServiceConfig) {
+    // Add protected admin routes here
+    cfg.service(web::scope("")); // Empty for now, will add protected routes later
 }
 
 #[post("/login")]

@@ -1,6 +1,7 @@
 use cloudinary::upload::{OptionalParameters, Source, Upload};
 use std::collections::BTreeSet;
 use std::io::Error as IoError;
+use std::path::PathBuf;
 
 use crate::service::upload::config::get_cloudinary_uploader;
 use cloudinary::upload::result::UploadResult;
@@ -28,22 +29,27 @@ impl BannerUploadService {
         }
     }
 
-    pub async fn upload_banner(&self, base64_image: &str) -> Result<String, UploadError> {
-        let data_url = if base64_image.starts_with("data:image") {
-            base64_image.to_string()
+    pub async fn upload_banner(&self, image_data: &str) -> Result<String, UploadError> {
+        let source = if image_data.starts_with("/") || image_data.starts_with("./") {
+            // It's a file path
+            Source::Path(PathBuf::from(image_data))
         } else {
-            format!("data:image/png;base64,{}", base64_image)
+            // It's base64 data
+            let data_url = if image_data.starts_with("data:image") {
+                image_data.to_string()
+            } else {
+                format!("data:image/png;base64,{}", image_data)
+            };
+            Source::DataUrl(data_url)
         };
 
-        let options = BTreeSet::from([
-            OptionalParameters::Folder("banners".to_string()),
-            OptionalParameters::UseFileName(true),
-            OptionalParameters::UniqueFilename(true),
-        ]);
+        // Minimize parameters to reduce signature complexity
+        let mut options = BTreeSet::new();
+        options.insert(OptionalParameters::Folder("banners".to_string()));
 
         let result = self
             .uploader
-            .image(Source::DataUrl(data_url), &options)
+            .image(source, &options)
             .await
             .map_err(|e| UploadError::CloudinaryError(e.to_string()))?;
 

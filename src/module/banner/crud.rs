@@ -1,6 +1,7 @@
-use mongodb::{Collection, Database, bson::{doc, oid::ObjectId}, options::FindOptions};
+use mongodb::{Collection, Database, bson::{doc, oid::ObjectId, DateTime as BsonDateTime}, options::{FindOptions, FindOneAndUpdateOptions, ReturnDocument}};
 use futures_util::stream::TryStreamExt;
 use crate::module::banner::{model::Banner, schema::UpdateBannerSchema};
+use chrono::Utc;
 
 pub struct BannerCrud {
     collection: Collection<Banner>,
@@ -67,9 +68,25 @@ impl BannerCrud {
         if let Some(display_order) = data.display_order {
             update_doc.insert("display_order", display_order);
         }
+        if let Some(start_date) = data.start_date {
+            update_doc.insert("start_date", BsonDateTime::from_chrono(start_date));
+        }
+        if let Some(end_date) = data.end_date {
+            update_doc.insert("end_date", BsonDateTime::from_chrono(end_date));
+        }
+
+        // Add updated_at timestamp
+        update_doc.insert("updated_at", BsonDateTime::from_chrono(Utc::now()));
 
         let update = doc! { "$set": update_doc };
-        self.collection.find_one_and_update(doc! { "_id": id }, update).await
+        let options = FindOneAndUpdateOptions::builder()
+            .return_document(ReturnDocument::After)
+            .build();
+
+        self.collection
+            .find_one_and_update(doc! { "_id": id }, update)
+            .with_options(options)
+            .await
             .map_err(|e| e.to_string())?
             .ok_or_else(|| "Banner not found".to_string())
     }

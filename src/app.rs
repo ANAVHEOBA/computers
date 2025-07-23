@@ -3,21 +3,27 @@ use chrono::Utc;
 use mongodb::Database;
 
 use crate::module::{user::route as user_routes, admin::route as admin_routes, banner::route as banner_routes};
-use crate::middleware::AdminAuthentication;
+use crate::middleware::{AdminAuthentication, Authentication};
 
 /// Configures all the application services and routes.
 pub fn configure_services(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api")
-            .configure(user_routes::config)
-            .configure(banner_routes::config) // Public banner routes
             .service(
+                // User routes with user Authentication
+                web::scope("/users")
+                    .wrap(Authentication::new())
+                    .configure(user_routes::config)
+            )
+            // Public admin routes (login)
+            .service(admin_routes::public_routes())
+            .service(
+                // Protected admin routes
                 web::scope("/admin")
                     .wrap(AdminAuthentication::new())
-                    .configure(admin_routes::config)
-                    // We can add admin-specific banner routes here if needed,
-                    // but the current banner_routes are configured to handle both.
+                    .configure(admin_routes::protected_routes)
             )
+            .configure(banner_routes::config) // Public banner routes
     )
     .route("/health", web::get().to(health_check))
     .default_service(web::route().to(not_found));

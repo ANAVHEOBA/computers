@@ -1,6 +1,6 @@
 use actix_web::{
     dev::ServiceRequest, Error, error::ErrorUnauthorized,
-    http::header::{self},
+    http::header::{self}, HttpRequest,
 };
 use futures_util::future::{ok, Ready};
 use actix_web::dev::{Service, Transform};
@@ -15,6 +15,27 @@ pub struct AdminAuthentication;
 impl AdminAuthentication {
     pub fn new() -> Self {
         AdminAuthentication
+    }
+
+    // Public function that can be used anywhere to check admin status
+    pub async fn check_admin(req: &HttpRequest) -> Result<(), Error> {
+        let auth_header = req.headers().get(header::AUTHORIZATION)
+            .ok_or_else(|| ErrorUnauthorized("No authorization header"))?;
+
+        let auth_str = auth_header.to_str()
+            .map_err(|_| ErrorUnauthorized("Invalid authorization header"))?;
+
+        let token = auth_str.strip_prefix("Bearer ")
+            .ok_or_else(|| ErrorUnauthorized("Invalid authorization format"))?;
+
+        let jwt_service = JwtService::new();
+        let claims = jwt_service.verify_token(token)
+            .map_err(|_| ErrorUnauthorized("Invalid token"))?;
+
+        match claims.role {
+            Role::Admin => Ok(()),
+            _ => Err(ErrorUnauthorized("Insufficient permissions")),
+        }
     }
 }
 

@@ -1,7 +1,8 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpResponse, HttpRequest};
 use crate::module::banner::controller::BannerController;
 use crate::module::banner::schema::{CreateBannerSchema, UpdateBannerSchema};
 use crate::module::banner::interface::BannerService;
+use crate::middleware::AdminAuthentication;
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
@@ -25,9 +26,15 @@ async fn get_active_banners(controller: web::Data<BannerController>) -> HttpResp
 
 // Admin route (example)
 async fn create_banner(
+    req: HttpRequest,
     controller: web::Data<BannerController>,
     body: web::Json<CreateBannerSchema>,
 ) -> HttpResponse {
+    // Check admin authorization first
+    if let Err(e) = AdminAuthentication::check_admin(&req).await {
+        return e.error_response();
+    }
+
     match controller.create_banner(body.into_inner()).await {
         Ok(banner) => HttpResponse::Created().json(banner),
         Err(e) => HttpResponse::BadRequest().body(e.to_string()),
@@ -46,10 +53,16 @@ async fn get_banner(
 }
 
 async fn update_banner(
+    req: HttpRequest,
     controller: web::Data<BannerController>,
     path: web::Path<String>,
     body: web::Json<UpdateBannerSchema>,
 ) -> HttpResponse {
+    // Check admin authorization first
+    if let Err(e) = AdminAuthentication::check_admin(&req).await {
+        return e.error_response();
+    }
+
     match controller.update_banner(&path.into_inner(), body.into_inner()).await {
         Ok(banner) => HttpResponse::Ok().json(banner),
         Err(e) => HttpResponse::BadRequest().body(e.to_string()),
@@ -57,9 +70,15 @@ async fn update_banner(
 }
 
 async fn delete_banner(
+    req: HttpRequest,
     controller: web::Data<BannerController>,
     path: web::Path<String>,
 ) -> HttpResponse {
+    // Check admin authorization first
+    if let Err(e) = AdminAuthentication::check_admin(&req).await {
+        return e.error_response();
+    }
+
     match controller.delete_banner(&path.into_inner()).await {
         Ok(_) => HttpResponse::NoContent().finish(),
         Err(e) => HttpResponse::BadRequest().body(e.to_string()),

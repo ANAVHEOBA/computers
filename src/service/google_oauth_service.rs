@@ -36,10 +36,10 @@ impl GoogleOauthService {
             .set_client_secret(google_client_secret)
             .set_auth_uri(auth_url)
             .set_token_uri(token_url)
-            .set_redirect_uri(
-                RedirectUrl::new(env::var("GOOGLE_REDIRECT_URI").expect("Missing GOOGLE_REDIRECT_URI"))
-                    .expect("Invalid redirect URL"),
-            );
+        .set_redirect_uri(
+            RedirectUrl::new(env::var("GOOGLE_REDIRECT_URI").expect("Missing GOOGLE_REDIRECT_URI"))
+                .expect("Invalid redirect URL"),
+        );
 
         Self { client }
     }
