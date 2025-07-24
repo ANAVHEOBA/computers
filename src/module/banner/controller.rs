@@ -29,10 +29,10 @@ impl BannerController {
             link_url: banner.link_url,
             is_active: banner.is_active,
             display_order: banner.display_order,
-            start_date: banner.start_date,
-            end_date: banner.end_date,
-            created_at: banner.created_at,
-            updated_at: banner.updated_at,
+            start_date: banner.start_date.map(|dt| dt.to_rfc3339_string()),
+            end_date: banner.end_date.map(|dt| dt.to_rfc3339_string()),
+            created_at: banner.created_at.to_rfc3339_string(),
+            updated_at: banner.updated_at.to_rfc3339_string(),
         }
     }
 }

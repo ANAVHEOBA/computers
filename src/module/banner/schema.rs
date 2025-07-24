@@ -49,8 +49,10 @@ pub struct BannerResponse {
     pub link_url: Option<String>,
     pub is_active: bool,
     pub display_order: i32,
-    pub start_date: Option<DateTime<Utc>>,
-    pub end_date: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub end_date: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }

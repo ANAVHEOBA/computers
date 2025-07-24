@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
-use bson::oid::ObjectId;
+use bson::{oid::ObjectId, DateTime as BsonDateTime};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Banner {
@@ -12,10 +12,10 @@ pub struct Banner {
     pub link_url: Option<String>,
     pub is_active: bool,
     pub display_order: i32,  // For controlling the order of banners
-    pub start_date: Option<DateTime<Utc>>,  // Optional scheduling
-    pub end_date: Option<DateTime<Utc>>,    // Optional scheduling
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    pub start_date: Option<BsonDateTime>,  // Optional scheduling
+    pub end_date: Option<BsonDateTime>,    // Optional scheduling
+    pub created_at: BsonDateTime,
+    pub updated_at: BsonDateTime,
 }
 
 impl Banner {
@@ -28,7 +28,7 @@ impl Banner {
         start_date: Option<DateTime<Utc>>,
         end_date: Option<DateTime<Utc>>,
     ) -> Self {
-        let now = Utc::now();
+        let now = BsonDateTime::now();
         Self {
             id: None,
             title,
@@ -37,8 +37,8 @@ impl Banner {
             link_url,
             is_active: true,
             display_order,
-            start_date,
-            end_date,
+            start_date: start_date.map(BsonDateTime::from_chrono),
+            end_date: end_date.map(BsonDateTime::from_chrono),
             created_at: now,
             updated_at: now,
         }
