@@ -2,7 +2,13 @@ use actix_web::{web, HttpResponse};
 use chrono::Utc;
 use mongodb::Database;
 
-use crate::module::{user::route as user_routes, admin::route as admin_routes, banner::route as banner_routes};
+use crate::module::{
+    user::route as user_routes, 
+    admin::route as admin_routes, 
+    banner::route as banner_routes, 
+    category::route as category_routes,
+    brand::route as brand_routes
+};
 use crate::middleware::{AdminAuthentication, Authentication};
 
 /// Configures all the application services and routes.
@@ -24,6 +30,8 @@ pub fn configure_services(cfg: &mut web::ServiceConfig) {
                     .configure(admin_routes::protected_routes)
             )
             .configure(banner_routes::config) // Public banner routes
+            .configure(category_routes::category_routes) // Category routes
+            .configure(brand_routes::brand_routes) // Brand routes
     )
     .route("/health", web::get().to(health_check))
     .default_service(web::route().to(not_found));
