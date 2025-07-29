@@ -18,6 +18,8 @@ use crate::module::category::crud::CategoryCrud;
 use crate::module::category::controller::CategoryController;
 use crate::module::brand::crud::BrandCrud;
 use crate::module::brand::controller::BrandController;
+use crate::module::product::crud::ProductCrud;        // Add this import
+use crate::module::product::controller::ProductController; // Add this import
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -58,6 +60,10 @@ async fn main() -> std::io::Result<()> {
     let brand_crud = BrandCrud::new(&db);
     let brand_crud_data = web::Data::new(brand_crud);
 
+    // Initialize product CRUD - Add these lines
+    let product_crud = ProductCrud::new(&db);
+    let product_crud_data = web::Data::new(product_crud);
+
     let db_data = web::Data::new(db);
 
     println!("🚀 Server starting on http://127.0.0.1:8080");
@@ -79,7 +85,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(admin_controller.clone())
             .app_data(banner_controller.clone())
             .app_data(category_crud_data.clone())
-            .app_data(brand_crud_data.clone())  // Added brand CRUD data
+            .app_data(brand_crud_data.clone())
+            .app_data(product_crud_data.clone())  // Add this line
             .app_data(db_data.clone())
             // Configure services/routes
             .configure(app::configure_services)

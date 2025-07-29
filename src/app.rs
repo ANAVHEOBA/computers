@@ -7,7 +7,8 @@ use crate::module::{
     admin::route as admin_routes, 
     banner::route as banner_routes, 
     category::route as category_routes,
-    brand::route as brand_routes
+    brand::route as brand_routes,
+    product::route as product_routes  
 };
 use crate::middleware::{AdminAuthentication, Authentication};
 
@@ -32,6 +33,7 @@ pub fn configure_services(cfg: &mut web::ServiceConfig) {
             .configure(banner_routes::config) // Public banner routes
             .configure(category_routes::category_routes) // Category routes
             .configure(brand_routes::brand_routes) // Brand routes
+            .configure(product_routes::product_routes) // Product routes 
     )
     .route("/health", web::get().to(health_check))
     .default_service(web::route().to(not_found));

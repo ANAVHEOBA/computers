@@ -1,4 +1,3 @@
-// module/product/controller.rs
 use validator::Validate;
 use actix_web::{web, HttpResponse, Result};
 use crate::module::product::{
@@ -16,29 +15,127 @@ impl ProductController {
         Self { crud }
     }
     
-    pub async fn create_product(&self, product_data: CreateProductSchema) -> Result<Product, String> {
+    pub async fn create_product(&self, product_: CreateProductSchema) -> Result<Product, String> {
         // Validate the product data
-        match product_data.validate() {
+        match product_.validate() {
             Ok(_) => {},
             Err(e) => return Err(format!("Validation error: {}", e))
         }
         
         // Create the product
-        let product = self.crud.create_product(product_data).await?;
+        let product = self.crud.create_product(product_).await?;
         
         Ok(product)
     }
     
-    // HTTP handler function - moved here
+    // Add these new methods:
+    
+    pub async fn get_product(&self, id: &str) -> Result<Option<Product>, String> {
+        self.crud.get_product(id).await
+    }
+    
+    pub async fn get_all_products(&self) -> Result<Vec<Product>, String> {
+        self.crud.get_all_products().await
+    }
+    
+    pub async fn get_featured_products(&self, limit: Option<i64>) -> Result<Vec<Product>, String> {
+        self.crud.get_featured_products(limit).await
+    }
+    
+    pub async fn get_new_arrivals(&self, limit: Option<i64>) -> Result<Vec<Product>, String> {
+        self.crud.get_new_arrivals(limit).await
+    }
+    
+    pub async fn get_best_sellers(&self, limit: Option<i64>) -> Result<Vec<Product>, String> {
+        self.crud.get_best_sellers(limit).await
+    }
+    
+    // HTTP handler functions:
+    
+    // Create product handler
     pub async fn create_product_handler(
-        product_data: web::Json<CreateProductSchema>,
+        product_: web::Json<CreateProductSchema>,
         crud: web::Data<ProductCrud>,
     ) -> Result<HttpResponse> {
         let controller = ProductController::new(crud.get_ref().clone());
         
-        match controller.create_product(product_data.into_inner()).await {
+        match controller.create_product(product_.into_inner()).await {
             Ok(product) => Ok(HttpResponse::Created().json(product)),
             Err(error) => Ok(HttpResponse::BadRequest().json(serde_json::json!({
+                "error": error
+            }))),
+        }
+    }
+    
+    // GET all products handler
+    pub async fn get_products_handler(
+        crud: web::Data<ProductCrud>,
+    ) -> Result<HttpResponse> {
+        let controller = ProductController::new(crud.get_ref().clone());
+        
+        match controller.get_all_products().await {
+            Ok(products) => Ok(HttpResponse::Ok().json(products)),
+            Err(error) => Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": error
+            }))),
+        }
+    }
+    
+    // GET single product handler
+    pub async fn get_product_handler(
+        id: web::Path<String>,
+        crud: web::Data<ProductCrud>,
+    ) -> Result<HttpResponse> {
+        let controller = ProductController::new(crud.get_ref().clone());
+        
+        match controller.get_product(&id).await {
+            Ok(Some(product)) => Ok(HttpResponse::Ok().json(product)),
+            Ok(None) => Ok(HttpResponse::NotFound().json(serde_json::json!({
+                "error": "Product not found"
+            }))),
+            Err(error) => Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": error
+            }))),
+        }
+    }
+    
+    // GET featured products handler
+    pub async fn get_featured_products_handler(
+        crud: web::Data<ProductCrud>,
+    ) -> Result<HttpResponse> {
+        let controller = ProductController::new(crud.get_ref().clone());
+        
+        match controller.get_featured_products(Some(10)).await {
+            Ok(products) => Ok(HttpResponse::Ok().json(products)),
+            Err(error) => Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": error
+            }))),
+        }
+    }
+    
+    // GET new arrivals handler
+    pub async fn get_new_arrivals_handler(
+        crud: web::Data<ProductCrud>,
+    ) -> Result<HttpResponse> {
+        let controller = ProductController::new(crud.get_ref().clone());
+        
+        match controller.get_new_arrivals(Some(10)).await {
+            Ok(products) => Ok(HttpResponse::Ok().json(products)),
+            Err(error) => Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": error
+            }))),
+        }
+    }
+    
+    // GET best sellers handler
+    pub async fn get_best_sellers_handler(
+        crud: web::Data<ProductCrud>,
+    ) -> Result<HttpResponse> {
+        let controller = ProductController::new(crud.get_ref().clone());
+        
+        match controller.get_best_sellers(Some(10)).await {
+            Ok(products) => Ok(HttpResponse::Ok().json(products)),
+            Err(error) => Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": error
             }))),
         }
